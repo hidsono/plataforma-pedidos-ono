@@ -7,9 +7,9 @@ export async function DELETE(
 ) {
     try {
         const id = (await params).id;
-        const products = getProducts();
+        const products = await getProducts();
         const newProducts = products.filter(p => p.id !== id);
-        saveProducts(newProducts);
+        await saveProducts(newProducts);
         return NextResponse.json({ success: true });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
@@ -25,7 +25,7 @@ export async function PUT(
         const body = await request.json();
         const { product } = body;
 
-        const products = getProducts();
+        const products = await getProducts();
         const index = products.findIndex(p => p.id === id);
 
         if (index === -1) {
@@ -33,7 +33,7 @@ export async function PUT(
         }
 
         products[index] = { ...products[index], ...product };
-        saveProducts(products);
+        await saveProducts(products);
 
         return NextResponse.json({ success: true, product: products[index] });
     } catch (error) {
