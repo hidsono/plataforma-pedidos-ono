@@ -427,6 +427,10 @@ button {
 
 /* --- MOBILE RESPONSIVENESS --- */
 @media (max-width: 768px) {
+  .container {
+    padding: 0 12px;
+  }
+
   .product-grid {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -470,11 +474,87 @@ button {
 
   .cart-sidebar {
     width: 100%;
-    /* Takes full width on mobile */
   }
 
   .upload-zone {
     padding: 24px 16px;
+  }
+
+  /* Admin Table Optimization */
+  .table-container {
+    border: none;
+    background: transparent;
+  }
+
+  .table thead {
+    display: none; /* Hide headers on mobile */
+  }
+
+  .table, .table tbody, .table tr, .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table tr {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    padding: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .table td {
+    border: none;
+    padding: 4px 0;
+    text-align: left !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--secondary-text);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+  }
+
+  .table td:last-child {
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    padding-top: 12px;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .table td:last-child::before {
+    display: none;
+  }
+}
+
+/* Floating Action Button for mobile */
+.fab {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .fab {
+    display: flex;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: white;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(30, 109, 155, 0.4);
+    z-index: 900;
+    cursor: pointer;
   }
 }
 
@@ -486,29 +566,24 @@ button {
 @media (max-width: 768px) {
   .desktop-cart-btn {
     display: none !important;
-    /* Hide the top cart button on mobile */
   }
 
   .floating-cart {
     display: flex;
     position: fixed;
-    bottom: 24px;
+    bottom: 96px; /* Moved up to clear FAB */
     right: 24px;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    background-color: var(--primary);
-    color: white;
+    background-color: var(--card-bg);
+    color: var(--primary);
+    border: 2px solid var(--primary);
     justify-content: center;
     align-items: center;
-    box-shadow: 0 4px 12px rgba(30, 109, 155, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     z-index: 900;
     cursor: pointer;
-    transition: transform 0.2s;
-  }
-
-  .floating-cart:active {
-    transform: scale(0.95);
   }
 
   .floating-cart-badge {
@@ -517,10 +592,10 @@ button {
     right: -5px;
     background-color: var(--success);
     color: white;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: bold;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
