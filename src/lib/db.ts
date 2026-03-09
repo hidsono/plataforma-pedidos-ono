@@ -19,7 +19,10 @@ let client: MongoClient | null = null;
 async function getClient() {
   if (!client) {
     if (!DATABASE_URL) {
-      throw new Error("DATABASE_URL não configurada nas variáveis de ambiente");
+      // Em ambiente de build na Vercel, o DATABASE_URL pode não estar disponível.
+      // Retornamos um erro amigável em vez de travar o processo.
+      console.warn("Aviso: DATABASE_URL não configurada. Verifique as variáveis de ambiente na Vercel.");
+      return null;
     }
     client = new MongoClient(DATABASE_URL);
     await client.connect();
@@ -30,10 +33,11 @@ async function getClient() {
 export async function getProducts(): Promise<Product[]> {
   try {
     const client = await getClient();
+    if (!client) return [];
+
     const db = client.db(DB_NAME);
     const collection = db.collection(COLLECTION_NAME);
 
-    // Buscamos todos e removemos o _id do MongoDB para manter o formato do app
     const products = await collection.find({}).toArray();
     return products.map(p => {
       const { _id, ...rest } = p;
@@ -48,11 +52,11 @@ export async function getProducts(): Promise<Product[]> {
 export async function saveProducts(products: Product[]) {
   try {
     const client = await getClient();
+    if (!client) return;
+
     const db = client.db(DB_NAME);
     const collection = db.collection(COLLECTION_NAME);
 
-    // Na nuvem, o gerenciamento de produtos é um pouco diferente.
-    // Se você estiver enviando uma lista completa (Excel), vamos limpar e inserir todos.
     await collection.deleteMany({});
     if (products.length > 0) {
       await collection.insertMany(products);
@@ -66,6 +70,8 @@ export async function saveProducts(products: Product[]) {
 export async function saveSingleProduct(product: Product) {
   try {
     const client = await getClient();
+    if (!client) return;
+
     const db = client.db(DB_NAME);
     const collection = db.collection(COLLECTION_NAME);
 
