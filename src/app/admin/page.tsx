@@ -290,6 +290,41 @@ export default function AdminPage() {
                             <Plus size={16} />
                             Novo Produto
                         </button>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = '.json';
+                                input.onchange = (e: any) => {
+                                    const file = e.target.files[0];
+                                    const reader = new FileReader();
+                                    reader.onload = (event: any) => {
+                                        try {
+                                            const data = JSON.parse(event.target.result);
+                                            if (confirm(`Deseja importar ${data.length} produtos do backup?`)) {
+                                                fetch('/api/products', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ products: data })
+                                                }).then(() => {
+                                                    alert('Backup restaurado com sucesso!');
+                                                    window.location.reload();
+                                                });
+                                            }
+                                        } catch (err) {
+                                            alert('Erro ao ler arquivo de backup.');
+                                        }
+                                    };
+                                    reader.readAsText(file);
+                                };
+                                input.click();
+                            }}
+                            style={{ color: 'var(--primary)', borderColor: 'var(--primary)', background: 'transparent' }}
+                        >
+                            <Database size={16} />
+                            Restaurar Backup (JSON)
+                        </button>
                         {products.length > 0 && (
                             <button
                                 className="btn btn-secondary"
