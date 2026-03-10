@@ -22,6 +22,8 @@ export default function CartSidebar() {
     const [city, setCity] = useState('São Sebastião');
     const [state, setState] = useState('SP');
     const [payment, setPayment] = useState('PIX');
+    const [needsChange, setNeedsChange] = useState(false);
+    const [changeFor, setChangeFor] = useState('');
 
     const [isSearchingCep, setIsSearchingCep] = useState(false);
     const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
@@ -149,7 +151,7 @@ export default function CartSidebar() {
         message += `*Endereço:* ${street}, ${number}${complement ? ` (${complement})` : ''}\n`;
         message += `*Bairro:* ${neighborhood}\n`;
         message += `*Cidade:* ${city}\n`;
-        message += `*Forma de Pagto:* ${payment}\n\n`;
+        message += `*Forma de Pagto:* ${payment}${payment === 'Dinheiro' ? (needsChange ? ` (Troco para R$ ${changeFor})` : ' (Não precisa de troco)') : ''}\n\n`;
         message += `*ITENS DO PEDIDO:*\n`;
 
         items.forEach(item => {
@@ -395,7 +397,13 @@ export default function CartSidebar() {
                                     <select
                                         className="form-input"
                                         value={payment}
-                                        onChange={e => setPayment(e.target.value)}
+                                        onChange={e => {
+                                            setPayment(e.target.value);
+                                            if (e.target.value !== 'Dinheiro') {
+                                                setNeedsChange(false);
+                                                setChangeFor('');
+                                            }
+                                        }}
                                     >
                                         <option value="PIX">PIX</option>
                                         <option value="Dinheiro">Dinheiro</option>
@@ -403,6 +411,50 @@ export default function CartSidebar() {
                                         <option value="Cartão de Débito">Cartão de Débito</option>
                                     </select>
                                 </div>
+
+                                {payment === 'Dinheiro' && (
+                                    <div style={{
+                                        padding: '12px',
+                                        background: 'var(--secondary)',
+                                        borderRadius: '8px',
+                                        marginTop: '-10px',
+                                        marginBottom: '20px',
+                                        border: '1px solid var(--border)'
+                                    }}>
+                                        <p style={{ fontSize: '0.9rem', marginBottom: '8px', fontWeight: 600 }}>Precisa de troco?</p>
+                                        <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                                <input
+                                                    type="radio"
+                                                    name="troco"
+                                                    checked={!needsChange}
+                                                    onChange={() => setNeedsChange(false)}
+                                                /> Não
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                                <input
+                                                    type="radio"
+                                                    name="troco"
+                                                    checked={needsChange}
+                                                    onChange={() => setNeedsChange(true)}
+                                                /> Sim
+                                            </label>
+                                        </div>
+
+                                        {needsChange && (
+                                            <div className="form-group" style={{ marginBottom: 0 }}>
+                                                <label className="form-label">Troco para quanto? (R$)</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-input"
+                                                    placeholder="Ex: 50"
+                                                    value={changeFor}
+                                                    onChange={e => setChangeFor(e.target.value)}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </>
                     )}
