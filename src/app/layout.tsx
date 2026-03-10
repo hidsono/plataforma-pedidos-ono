@@ -4,13 +4,25 @@ import './globals.css';
 import { CartProvider } from '@/components/CartProvider';
 import Header from '@/components/Header';
 import CartSidebar from '@/components/CartSidebar';
+import InstallPWA from '@/components/InstallPWA';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Catálogo de Produtos | ONO PESCA',
   description: 'Faça seu pedido diretamente pelo nosso catálogo online.',
+  manifest: '/manifest.json',
+  themeColor: '#ffffff',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'ONO PESCA',
+  },
+  icons: {
+    apple: '/logo-ono.jpg',
+  },
 };
+
 
 export default function RootLayout({
   children,
@@ -23,6 +35,7 @@ export default function RootLayout({
         <CartProvider>
           <Header />
           <CartSidebar />
+          <InstallPWA />
           <main>
             {children}
           </main>

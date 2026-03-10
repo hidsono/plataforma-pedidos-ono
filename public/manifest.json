@@ -1,0 +1,23 @@
+{
+    "name": "Catálogo ONO PESCA",
+    "short_name": "ONO PESCA",
+    "description": "Faça seu pedido diretamente pelo nosso catálogo online.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#000000",
+    "icons": [
+        {
+            "src": "/logo-ono.jpg",
+            "sizes": "192x192",
+            "type": "image/jpeg",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/logo-ono.jpg",
+            "sizes": "512x512",
+            "type": "image/jpeg",
+            "purpose": "any maskable"
+        }
+    ]
+}
