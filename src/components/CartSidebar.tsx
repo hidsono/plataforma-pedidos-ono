@@ -40,11 +40,16 @@ export default function CartSidebar() {
         }
     }, [isCartOpen]);
 
-    const calculateDeliveryFee = (cleanCep: string): number => {
-        if (!deliverySettings) return 10.00; // Fallback se não carregar
+    const calculateDeliveryFee = (currentNeighborhood: string): number => {
+        if (!deliverySettings) return 10.00;
 
-        // Procura uma regra que combine com o prefixo
-        const rule = deliverySettings.deliveryRules.find(r => cleanCep.startsWith(r.prefix));
+        const normalize = (str: string) =>
+            str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+        const rule = deliverySettings.deliveryRules.find(r =>
+            normalize(r.neighborhood) === normalize(currentNeighborhood)
+        );
+
         if (rule) return rule.fee;
 
         return deliverySettings.defaultFee;
@@ -59,7 +64,7 @@ export default function CartSidebar() {
             setDeliveryFee(null);
             setCepError('');
         }
-    }, [cep, deliverySettings]); // Re-calcula se as configurações mudarem
+    }, [cep]);
 
     const handleSearchCep = async (cleanCep: string) => {
         setIsSearchingCep(true);
@@ -78,7 +83,7 @@ export default function CartSidebar() {
                 setStreet(data.logradouro);
                 setNeighborhood(data.bairro);
                 setCity(data.localidade);
-                setDeliveryFee(calculateDeliveryFee(cleanCep));
+                setDeliveryFee(calculateDeliveryFee(data.bairro));
             }
         } catch (error) {
             setCepError('Erro ao buscar CEP.');

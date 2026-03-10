@@ -86,9 +86,8 @@ export async function saveSingleProduct(product: Product) {
 }
 
 export interface DeliveryRule {
-  prefix: string;
+  neighborhood: string;
   fee: number;
-  label?: string;
 }
 
 export interface Settings {
@@ -103,8 +102,8 @@ const SETTINGS_COLLECTION = "settings";
 export async function getSettings(): Promise<Settings> {
   const defaultSettings: Settings = {
     deliveryRules: [
-      { prefix: '1160', fee: 5.00, label: 'Centro / Próximos' },
-      { prefix: '1161', fee: 8.00, label: 'Bairros Próximos' }
+      { neighborhood: 'Centro', fee: 5.00 },
+      { neighborhood: 'Vila', fee: 8.00 }
     ],
     defaultFee: 10.00
   };

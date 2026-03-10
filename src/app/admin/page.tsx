@@ -255,7 +255,7 @@ export default function AdminPage() {
     const addDeliveryRule = () => {
         setDeliverySettings({
             ...deliverySettings,
-            deliveryRules: [...deliverySettings.deliveryRules, { prefix: '', fee: 0, label: '' }]
+            deliveryRules: [...deliverySettings.deliveryRules, { neighborhood: '', fee: 0 }]
         });
     };
 
@@ -401,15 +401,17 @@ export default function AdminPage() {
                             </div>
                             <div style={{ marginBottom: '16px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                    <h3>Regras por CEP</h3>
-                                    <button type="button" onClick={addDeliveryRule} className="btn-small">+ Regra</button>
+                                    <h3>Taxas por Bairro</h3>
+                                    <button type="button" onClick={addDeliveryRule} className="btn-small">+ Bairro</button>
                                 </div>
                                 {deliverySettings.deliveryRules.map((rule, idx) => (
                                     <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px', background: 'var(--secondary)', padding: '10px', borderRadius: '8px' }}>
-                                        <input placeholder="CEP" value={rule.prefix} onChange={e => updateDeliveryRule(idx, 'prefix', e.target.value)} style={{ width: '80px' }} />
-                                        <input type="number" step="0.01" value={rule.fee} onChange={e => updateDeliveryRule(idx, 'fee', parseFloat(e.target.value))} style={{ width: '80px' }} />
-                                        <input placeholder="Região" value={rule.label} onChange={e => updateDeliveryRule(idx, 'label', e.target.value)} style={{ flex: 1 }} />
-                                        <button type="button" onClick={() => removeDeliveryRule(idx)}><Trash2 size={16} /></button>
+                                        <input placeholder="Nome do Bairro" value={rule.neighborhood} onChange={e => updateDeliveryRule(idx, 'neighborhood', e.target.value)} style={{ flex: 1 }} />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100px' }}>
+                                            <span>R$</span>
+                                            <input type="number" step="0.01" value={rule.fee} onChange={e => updateDeliveryRule(idx, 'fee', parseFloat(e.target.value))} style={{ width: '100%' }} />
+                                        </div>
+                                        <button type="button" onClick={() => removeDeliveryRule(idx)} style={{ color: '#dc3545' }}><Trash2 size={16} /></button>
                                     </div>
                                 ))}
                             </div>
