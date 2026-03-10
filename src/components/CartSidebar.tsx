@@ -19,7 +19,8 @@ export default function CartSidebar() {
     const [number, setNumber] = useState('');
     const [complement, setComplement] = useState('');
     const [neighborhood, setNeighborhood] = useState('');
-    const [city, setCity] = useState('');
+    const [city, setCity] = useState('São Sebastião');
+    const [state, setState] = useState('SP');
     const [payment, setPayment] = useState('PIX');
 
     const [isSearchingCep, setIsSearchingCep] = useState(false);
@@ -28,6 +29,36 @@ export default function CartSidebar() {
     const [deliverySettings, setDeliverySettings] = useState<{ deliveryRules: any[], defaultFee: number } | null>(null);
 
     const [status, setStatus] = useState<BusinessStatus | null>(null);
+
+    const handleSearchAddress = async () => {
+        if (street.length < 3 || city.length < 3 || state.length < 2) {
+            alert("Para buscar o CEP, preencha a Rua, Cidade e Estado (UF).");
+            return;
+        }
+        setIsSearchingCep(true);
+        setCepError('');
+        try {
+            // ViaCEP address search URL: UF/CIDADE/LOGRADOURO/json/
+            const res = await fetch(`https://viacep.com.br/ws/${state}/${city}/${street}/json/`);
+            const data = await res.json();
+
+            if (Array.isArray(data) && data.length > 0) {
+                // Pega o melhor resultado (primeiro)
+                const result = data[0];
+                setCep(result.cep);
+                setNeighborhood(result.bairro);
+                setCity(result.localidade);
+                setState(result.uf);
+                setDeliveryFee(calculateDeliveryFee(result.bairro));
+            } else {
+                alert("Nenhum CEP encontrado para este endereço. Tente digitar o nome da rua de forma diferente.");
+            }
+        } catch (error) {
+            alert("Erro ao pesquisar endereço. Tente novamente.");
+        } finally {
+            setIsSearchingCep(false);
+        }
+    };
 
     useEffect(() => {
         if (isCartOpen) {
@@ -291,13 +322,49 @@ export default function CartSidebar() {
 
                                 <div className="form-group">
                                     <label className="form-label">Logradouro (Rua/Av) *</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="Preenchido via CEP"
-                                        value={street}
-                                        onChange={e => setStreet(e.target.value)}
-                                    />
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Nome da rua..."
+                                            value={street}
+                                            onChange={e => setStreet(e.target.value)}
+                                            style={{ flex: 1 }}
+                                        />
+                                        {!cep && street.length >= 3 && (
+                                            <button
+                                                type="button"
+                                                className="btn-search-cep"
+                                                onClick={handleSearchAddress}
+                                                disabled={isSearchingCep}
+                                            >
+                                                {isSearchingCep ? '...' : 'Buscar CEP'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div className="form-group">
+                                        <label className="form-label">Cidade *</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={city}
+                                            onChange={e => setCity(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Estado (UF) *</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Ex: SP"
+                                            maxLength={2}
+                                            value={state}
+                                            onChange={e => setState(e.target.value.toUpperCase())}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -380,6 +447,19 @@ export default function CartSidebar() {
                 .animate-spin {
                     animation: spin 1s linear infinite;
                 }
+                .btn-search-cep {
+                    padding: 0 12px;
+                    background: var(--primary);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    transition: opacity 0.2s;
+                }
+                .btn-search-cep:hover { opacity: 0.9; }
+                .btn-search-cep:disabled { opacity: 0.5; cursor: not-allowed; }
             `}</style>
         </>
     );
