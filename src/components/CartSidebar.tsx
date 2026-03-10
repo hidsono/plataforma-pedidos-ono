@@ -32,8 +32,8 @@ export default function CartSidebar() {
     useEffect(() => {
         if (isCartOpen) {
             setStatus(getBusinessStatus());
-            // Busca as configurações de taxa sempre que o carrinho abre
-            fetch('/api/settings')
+            // Busca as configurações de taxa sempre que o carrinho abre, sem cache
+            fetch('/api/settings', { cache: 'no-store' })
                 .then(res => res.json())
                 .then(data => setDeliverySettings(data))
                 .catch(console.error);
@@ -44,15 +44,16 @@ export default function CartSidebar() {
         if (!deliverySettings) return 10.00;
 
         const normalize = (str: string) =>
-            str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
 
-        const rule = deliverySettings.deliveryRules.find(r =>
-            normalize(r.neighborhood) === normalize(currentNeighborhood)
+        const normalizedCurrent = normalize(currentNeighborhood);
+        const rule = deliverySettings.deliveryRules?.find(r =>
+            normalize(r.neighborhood) === normalizedCurrent
         );
 
         if (rule) return rule.fee;
 
-        return deliverySettings.defaultFee;
+        return deliverySettings.defaultFee || 10.00;
     };
 
     // Busca CEP automaticamente quando atinge 8 dígitos
@@ -60,11 +61,14 @@ export default function CartSidebar() {
         const cleanCep = cep.replace(/\D/g, '');
         if (cleanCep.length === 8) {
             handleSearchCep(cleanCep);
+        } else if (neighborhood && deliverySettings) {
+            // Se já temos o bairro mas as configurações mudaram (terminaram de carregar), atualiza a taxa
+            setDeliveryFee(calculateDeliveryFee(neighborhood));
         } else {
             setDeliveryFee(null);
             setCepError('');
         }
-    }, [cep]);
+    }, [cep, deliverySettings, neighborhood]);
 
     const handleSearchCep = async (cleanCep: string) => {
         setIsSearchingCep(true);
