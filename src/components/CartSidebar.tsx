@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from './CartProvider';
-import { X, Plus, Minus, Send, ShoppingBag } from 'lucide-react';
+import { X, Plus, Minus, Send, ShoppingBag, AlertTriangle, Clock } from 'lucide-react';
+import { getBusinessStatus, BusinessStatus } from '@/lib/businessHours';
 
 // Substitua pelo número do WhatsApp no formato internacional: 5511999999999
 const WHATSAPP_NUMBER = "551238622922";
@@ -13,6 +14,13 @@ export default function CartSidebar() {
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
     const [payment, setPayment] = useState('PIX');
+    const [status, setStatus] = useState<BusinessStatus | null>(null);
+
+    useEffect(() => {
+        if (isCartOpen) {
+            setStatus(getBusinessStatus());
+        }
+    }, [isCartOpen]);
 
     const hasVariableWeight = items.some(item => item.isVariableWeight);
 
@@ -22,7 +30,14 @@ export default function CartSidebar() {
             return;
         }
 
+        const currentStatus = getBusinessStatus();
+
         let message = `*NOVO PEDIDO!*\n\n`;
+
+        if (!currentStatus.isOrderingOpen) {
+            message += `⚠️ _Pedido feito fora do horário de atendimento. Será processado em: ${currentStatus.nextOpening}_ \n\n`;
+        }
+
         message += `*Cliente:* ${name}\n`;
         message += `*Endereço:* ${address}\n`;
         message += `*Forma de Pagto:* ${payment}\n\n`;
@@ -82,6 +97,27 @@ export default function CartSidebar() {
                         </div>
                     ) : (
                         <>
+                            {status && !status.isOrderingOpen && (
+                                <div style={{
+                                    backgroundColor: '#fff3cd',
+                                    color: '#856404',
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    marginBottom: '20px',
+                                    fontSize: '0.85rem',
+                                    border: '1px solid #ffeeba',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '4px'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+                                        <AlertTriangle size={16} />
+                                        Fora do horário de pedidos
+                                    </div>
+                                    <p>Seu pedido será recebido agora, mas processado apenas em: <b>{status.nextOpening}</b>.</p>
+                                </div>
+                            )}
+
                             <div style={{ marginBottom: '24px' }}>
                                 {items.map(item => (
                                     <div key={item.id} className="cart-item">
