@@ -2,18 +2,43 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from './CartProvider';
-import { X, Plus, Minus, Send, ShoppingBag, AlertTriangle, Clock } from 'lucide-react';
+import { X, Plus, Minus, Send, ShoppingBag, AlertTriangle, Clock, MapPin, Loader2 } from 'lucide-react';
 import { getBusinessStatus, BusinessStatus } from '@/lib/businessHours';
 
 // Substitua pelo número do WhatsApp no formato internacional: 5511999999999
 const WHATSAPP_NUMBER = "551238622922";
 
+// Tabela de taxas de entrega por CEP (Exemplo para Litoral Norte)
+// Você pode ajustar esses valores ou adicionar novos prefixos de CEP
+const getDeliveryFeeByCep = (cep: string): number => {
+    const cleanCep = cep.replace(/\D/g, '');
+
+    // Lista de exemplo:
+    // CEPs de São Sebastião/Ilhabela (11600-000 a 11679-999 aproximado)
+    if (cleanCep.startsWith('1160')) return 5.00;  // Centro / Próximos
+    if (cleanCep.startsWith('1161')) return 8.00;  // Bairros um pouco mais longe
+    if (cleanCep.startsWith('1162')) return 12.00; // Costa Sul
+    if (cleanCep.startsWith('1163')) return 15.00; // Ilhabela (balsa/etc)
+
+    return 10.00; // Taxa padrão para outros CEPs da região
+};
+
 export default function CartSidebar() {
     const { items, isCartOpen, setIsCartOpen, total, updateQuantity, clearCart } = useCart();
 
     const [name, setName] = useState('');
-    const [address, setAddress] = useState('');
+    const [cep, setCep] = useState('');
+    const [street, setStreet] = useState('');
+    const [number, setNumber] = useState('');
+    const [complement, setComplement] = useState('');
+    const [neighborhood, setNeighborhood] = useState('');
+    const [city, setCity] = useState('');
     const [payment, setPayment] = useState('PIX');
+
+    const [isSearchingCep, setIsSearchingCep] = useState(false);
+    const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
+    const [cepError, setCepError] = useState('');
+
     const [status, setStatus] = useState<BusinessStatus | null>(null);
 
     useEffect(() => {
@@ -22,15 +47,53 @@ export default function CartSidebar() {
         }
     }, [isCartOpen]);
 
+    // Busca CEP automaticamente quando atinge 8 dígitos
+    useEffect(() => {
+        const cleanCep = cep.replace(/\D/g, '');
+        if (cleanCep.length === 8) {
+            handleSearchCep(cleanCep);
+        } else {
+            setDeliveryFee(null);
+            setCepError('');
+        }
+    }, [cep]);
+
+    const handleSearchCep = async (cleanCep: string) => {
+        setIsSearchingCep(true);
+        setCepError('');
+        try {
+            const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+            const data = await res.json();
+
+            if (data.erro) {
+                setCepError('CEP não encontrado.');
+                setStreet('');
+                setNeighborhood('');
+                setCity('');
+                setDeliveryFee(null);
+            } else {
+                setStreet(data.logradouro);
+                setNeighborhood(data.bairro);
+                setCity(data.localidade);
+                setDeliveryFee(getDeliveryFeeByCep(cleanCep));
+            }
+        } catch (error) {
+            setCepError('Erro ao buscar CEP.');
+        } finally {
+            setIsSearchingCep(false);
+        }
+    };
+
     const hasVariableWeight = items.some(item => item.isVariableWeight);
 
     const handleCheckout = () => {
-        if (!name || !address) {
-            alert("Por favor, preencha nome e endereço para entrega.");
+        if (!name || !cep || !street || !number || !neighborhood) {
+            alert("Por favor, preencha todos os campos obrigatórios para entrega.");
             return;
         }
 
         const currentStatus = getBusinessStatus();
+        const finalTotal = total + (deliveryFee || 0);
 
         let message = `*NOVO PEDIDO!*\n\n`;
 
@@ -39,7 +102,10 @@ export default function CartSidebar() {
         }
 
         message += `*Cliente:* ${name}\n`;
-        message += `*Endereço:* ${address}\n`;
+        message += `*CEP:* ${cep}\n`;
+        message += `*Endereço:* ${street}, ${number}${complement ? ` (${complement})` : ''}\n`;
+        message += `*Bairro:* ${neighborhood}\n`;
+        message += `*Cidade:* ${city}\n`;
         message += `*Forma de Pagto:* ${payment}\n\n`;
         message += `*ITENS DO PEDIDO:*\n`;
 
@@ -59,11 +125,15 @@ export default function CartSidebar() {
             }
         });
 
+        message += `\n----------------------\n`;
+        message += `*Subtotal:* R$ ${total.toFixed(2)}\n`;
+        message += `*Taxa de Entrega:* R$ ${(deliveryFee || 0).toFixed(2)}\n`;
+
         if (hasVariableWeight) {
-            message += `\n*TOTAL APROXIMADO: ~ R$ ${total.toFixed(2)}*\n\n`;
+            message += `*TOTAL APROXIMADO: ~ R$ ${finalTotal.toFixed(2)}*\n\n`;
             message += `_Aviso: Alguns itens são de peso variável. O valor final será confirmado após a pesagem das peças._`;
         } else {
-            message += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
+            message += `*TOTAL: R$ ${finalTotal.toFixed(2)}*`;
         }
 
         const encodedMessage = encodeURIComponent(message);
@@ -73,6 +143,8 @@ export default function CartSidebar() {
         clearCart();
         setIsCartOpen(false);
     };
+
+    const cartTotalWithDelivery = total + (deliveryFee || 0);
 
     return (
         <>
@@ -156,9 +228,13 @@ export default function CartSidebar() {
                             </div>
 
                             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-                                <h3 style={{ marginBottom: '16px' }}>Dados de Entrega</h3>
+                                <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <MapPin size={18} />
+                                    Dados de Entrega
+                                </h3>
+
                                 <div className="form-group">
-                                    <label className="form-label">Seu Nome</label>
+                                    <label className="form-label">Seu Nome *</label>
                                     <input
                                         type="text"
                                         className="form-input"
@@ -167,18 +243,76 @@ export default function CartSidebar() {
                                         onChange={e => setName(e.target.value)}
                                     />
                                 </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div className="form-group">
+                                        <label className="form-label">CEP *</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                placeholder="00000-000"
+                                                value={cep}
+                                                maxLength={9}
+                                                onChange={e => setCep(e.target.value)}
+                                            />
+                                            {isSearchingCep && (
+                                                <div style={{ position: 'absolute', right: '10px', top: '10px' }}>
+                                                    <Loader2 size={20} className="animate-spin" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        {cepError && <span style={{ fontSize: '0.75rem', color: '#dc3545' }}>{cepError}</span>}
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Número *</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Nº"
+                                            value={number}
+                                            onChange={e => setNumber(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="form-group">
-                                    <label className="form-label">Endereço Completo</label>
+                                    <label className="form-label">Logradouro (Rua/Av) *</label>
                                     <input
                                         type="text"
                                         className="form-input"
-                                        placeholder="Rua, Número, Bairro, Complemento"
-                                        value={address}
-                                        onChange={e => setAddress(e.target.value)}
+                                        placeholder="Preenchido via CEP"
+                                        value={street}
+                                        onChange={e => setStreet(e.target.value)}
                                     />
                                 </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div className="form-group">
+                                        <label className="form-label">Bairro *</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Bairro"
+                                            value={neighborhood}
+                                            onChange={e => setNeighborhood(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Complemento</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Apto, Bloco..."
+                                            value={complement}
+                                            onChange={e => setComplement(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="form-group">
-                                    <label className="form-label">Forma de Pagamento</label>
+                                    <label className="form-label">Forma de Pagamento *</label>
                                     <select
                                         className="form-input"
                                         value={payment}
@@ -197,22 +331,44 @@ export default function CartSidebar() {
 
                 {items.length > 0 && (
                     <div className="cart-footer">
-                        <div className="cart-total">
-                            <span>Total {hasVariableWeight && <span style={{ fontSize: '0.85rem', color: 'var(--secondary-text)', fontWeight: 'normal' }}>(Aproximado)</span>}</span>
-                            <span>{hasVariableWeight ? '~ ' : ''}R$ {total.toFixed(2)}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                                <span style={{ color: 'var(--secondary-text)' }}>Subtotal:</span>
+                                <span>R$ {total.toFixed(2)}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                                <span style={{ color: 'var(--secondary-text)' }}>Taxa de Entrega:</span>
+                                <span style={{ color: deliveryFee !== null ? 'var(--success)' : 'inherit' }}>
+                                    {deliveryFee !== null ? `R$ ${deliveryFee.toFixed(2)}` : 'Digite o CEP'}
+                                </span>
+                            </div>
+                            <div className="cart-total" style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '4px' }}>
+                                <span>Total {hasVariableWeight && <span style={{ fontSize: '0.85rem', color: 'var(--secondary-text)', fontWeight: 'normal' }}>(Aproximado)</span>}</span>
+                                <span>{hasVariableWeight ? '~ ' : ''}R$ {cartTotalWithDelivery.toFixed(2)}</span>
+                            </div>
                         </div>
+
                         {hasVariableWeight && (
                             <p style={{ fontSize: '0.8rem', color: '#dc3545', marginBottom: '16px', lineHeight: 1.4, backgroundColor: '#fae1e3', padding: '12px', borderRadius: '8px' }}>
                                 <b>Atenção:</b> Alguns peixes têm variação natural de peso. O valor total é <b>aproximado</b> e será confirmado pelo nosso atendente após a pesagem no WhatsApp.
                             </p>
                         )}
-                        <button className="btn btn-success" style={{ width: '100%', padding: '16px' }} onClick={handleCheckout}>
+                        <button className="btn btn-success" style={{ width: '100%', padding: '16px', gap: '8px' }} onClick={handleCheckout}>
                             <Send size={18} />
                             Enviar Pedido pelo WhatsApp
                         </button>
                     </div>
                 )}
             </div>
+
+            <style jsx>{`
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                .animate-spin {
+                    animation: spin 1s linear infinite;
+                }
+            `}</style>
         </>
     );
 }
