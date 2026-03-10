@@ -67,7 +67,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 takeLeftovers
             }];
         });
-        setIsCartOpen(true);
     };
 
     const removeFromCart = (id: string) => setItems(prev => prev.filter(item => item.id !== id));

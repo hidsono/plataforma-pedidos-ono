@@ -14,8 +14,9 @@ export default function Home() {
   const [cleaningOption, setCleaningOption] = useState<string>('Inteiro sem limpeza');
   const [fileSkinOption, setFileSkinOption] = useState<string>('Com Pele');
   const [takeLeftovers, setTakeLeftovers] = useState<boolean>(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const { addToCart } = useCart();
+  const { addToCart, setIsCartOpen } = useCart();
 
   useEffect(() => {
     fetch('/api/products')
@@ -58,6 +59,7 @@ export default function Home() {
       setTakeLeftovers(false);
     } else {
       addToCart(product);
+      setShowSuccessModal(true);
     }
   };
 
@@ -75,6 +77,7 @@ export default function Home() {
 
       addToCart(selectedVarProduct, finalCleaningOption, takeLeftovers);
       setSelectedVarProduct(null);
+      setShowSuccessModal(true);
     }
   };
 
@@ -284,6 +287,38 @@ export default function Home() {
 
               <button className="btn btn-primary" onClick={confirmVariableAdding} style={{ padding: '14px', fontSize: '1rem', marginTop: '8px' }}>
                 Adicionar ao Carrinho
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showSuccessModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
+          <div className="animate-fade-in" style={{ backgroundColor: 'var(--card-bg)', width: '100%', maxWidth: '400px', borderRadius: '16px', padding: '32px', textAlign: 'center', border: '1px solid var(--border)' }}>
+            <div style={{ backgroundColor: 'var(--success)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <PlusCircle size={32} color="#fff" />
+            </div>
+
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>Produto Adicionado!</h2>
+            <p style={{ color: 'var(--secondary-text)', marginBottom: '32px' }}>O item foi colocado no seu carrinho com sucesso.</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '14px' }}
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setIsCartOpen(true);
+                }}
+              >
+                Visualizar Carrinho
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ width: '100%', padding: '14px', background: 'transparent', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                onClick={() => setShowSuccessModal(false)}
+              >
+                Continuar Comprando
               </button>
             </div>
           </div>
