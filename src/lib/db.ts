@@ -84,3 +84,65 @@ export async function saveSingleProduct(product: Product) {
     console.error("Erro ao salvar produto único:", e);
   }
 }
+
+export interface DeliveryRule {
+  prefix: string;
+  fee: number;
+  label?: string;
+}
+
+export interface Settings {
+  deliveryRules: DeliveryRule[];
+  defaultFee: number;
+}
+
+const SETTINGS_COLLECTION = "settings";
+
+// ... existing code ...
+
+export async function getSettings(): Promise<Settings> {
+  const defaultSettings: Settings = {
+    deliveryRules: [
+      { prefix: '1160', fee: 5.00, label: 'Centro / Próximos' },
+      { prefix: '1161', fee: 8.00, label: 'Bairros Próximos' }
+    ],
+    defaultFee: 10.00
+  };
+
+  try {
+    const client = await getClient();
+    if (!client) return defaultSettings;
+
+    const db = client.db(DB_NAME);
+    const collection = db.collection(SETTINGS_COLLECTION);
+
+    const settings = await collection.findOne({ type: 'delivery' });
+    if (!settings) return defaultSettings;
+
+    return {
+      deliveryRules: settings.deliveryRules || defaultSettings.deliveryRules,
+      defaultFee: settings.defaultFee ?? defaultSettings.defaultFee
+    };
+  } catch (e) {
+    console.error("Erro ao buscar configurações:", e);
+    return defaultSettings;
+  }
+}
+
+export async function saveSettings(settings: Settings) {
+  try {
+    const client = await getClient();
+    if (!client) return;
+
+    const db = client.db(DB_NAME);
+    const collection = db.collection(SETTINGS_COLLECTION);
+
+    await collection.updateOne(
+      { type: 'delivery' },
+      { $set: { ...settings, type: 'delivery' } },
+      { upsert: true }
+    );
+  } catch (e) {
+    console.error("Erro ao salvar configurações:", e);
+  }
+}

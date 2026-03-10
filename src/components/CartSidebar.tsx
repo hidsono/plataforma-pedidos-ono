@@ -8,20 +8,7 @@ import { getBusinessStatus, BusinessStatus } from '@/lib/businessHours';
 // Substitua pelo número do WhatsApp no formato internacional: 5511999999999
 const WHATSAPP_NUMBER = "551238622922";
 
-// Tabela de taxas de entrega por CEP (Exemplo para Litoral Norte)
-// Você pode ajustar esses valores ou adicionar novos prefixos de CEP
-const getDeliveryFeeByCep = (cep: string): number => {
-    const cleanCep = cep.replace(/\D/g, '');
 
-    // Lista de exemplo:
-    // CEPs de São Sebastião/Ilhabela (11600-000 a 11679-999 aproximado)
-    if (cleanCep.startsWith('1160')) return 5.00;  // Centro / Próximos
-    if (cleanCep.startsWith('1161')) return 8.00;  // Bairros um pouco mais longe
-    if (cleanCep.startsWith('1162')) return 12.00; // Costa Sul
-    if (cleanCep.startsWith('1163')) return 15.00; // Ilhabela (balsa/etc)
-
-    return 10.00; // Taxa padrão para outros CEPs da região
-};
 
 export default function CartSidebar() {
     const { items, isCartOpen, setIsCartOpen, total, updateQuantity, clearCart } = useCart();
@@ -38,14 +25,30 @@ export default function CartSidebar() {
     const [isSearchingCep, setIsSearchingCep] = useState(false);
     const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
     const [cepError, setCepError] = useState('');
+    const [deliverySettings, setDeliverySettings] = useState<{ deliveryRules: any[], defaultFee: number } | null>(null);
 
     const [status, setStatus] = useState<BusinessStatus | null>(null);
 
     useEffect(() => {
         if (isCartOpen) {
             setStatus(getBusinessStatus());
+            // Busca as configurações de taxa sempre que o carrinho abre
+            fetch('/api/settings')
+                .then(res => res.json())
+                .then(data => setDeliverySettings(data))
+                .catch(console.error);
         }
     }, [isCartOpen]);
+
+    const calculateDeliveryFee = (cleanCep: string): number => {
+        if (!deliverySettings) return 10.00; // Fallback se não carregar
+
+        // Procura uma regra que combine com o prefixo
+        const rule = deliverySettings.deliveryRules.find(r => cleanCep.startsWith(r.prefix));
+        if (rule) return rule.fee;
+
+        return deliverySettings.defaultFee;
+    };
 
     // Busca CEP automaticamente quando atinge 8 dígitos
     useEffect(() => {
@@ -56,7 +59,7 @@ export default function CartSidebar() {
             setDeliveryFee(null);
             setCepError('');
         }
-    }, [cep]);
+    }, [cep, deliverySettings]); // Re-calcula se as configurações mudarem
 
     const handleSearchCep = async (cleanCep: string) => {
         setIsSearchingCep(true);
@@ -75,7 +78,7 @@ export default function CartSidebar() {
                 setStreet(data.logradouro);
                 setNeighborhood(data.bairro);
                 setCity(data.localidade);
-                setDeliveryFee(getDeliveryFeeByCep(cleanCep));
+                setDeliveryFee(calculateDeliveryFee(cleanCep));
             }
         } catch (error) {
             setCepError('Erro ao buscar CEP.');
